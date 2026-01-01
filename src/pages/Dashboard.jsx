@@ -26,7 +26,7 @@ export default function Dashboard() {
       const user = JSON.parse(localStorage.getItem('rf_user'));
       if (!user) return;
 
-      const response = await fetch(`/api/auth/account-info/${user.username}`);
+      const response = await fetch(`/api/account-info/${user.username}`);
       const result = await response.json();
 
       if (result.status === 200) {
