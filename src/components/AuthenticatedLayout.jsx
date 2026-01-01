@@ -132,7 +132,6 @@ export default function AuthenticatedLayout({ onLogout }) {
             }}
           >
             <div style={{ 
-              padding: 32, 
               background: '#0a0a0a', 
               borderRadius: '8px', 
               border: '1px solid #1a1a1a',

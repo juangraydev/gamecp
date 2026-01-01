@@ -27,7 +27,7 @@ router.post("/register", async (req, res) => {
             .input("username", sql.VarChar, username)
             .query(`
                 SELECT id FROM RF_User.dbo.tbl_rfaccount 
-                WHERE id = CONVERT(BINARY(13), @username)
+                WHERE id = convert(binary, @username)
             `);
 
         if (check.recordset.length > 0) {
@@ -49,8 +49,8 @@ router.post("/register", async (req, res) => {
                     [id], [password], [accounttype], [birthdate], [Email], [pin]
                 ) 
                 VALUES (
-                    CONVERT(BINARY(13), @id), 
-                    CONVERT(BINARY(13), @pw), 
+                    convert(binary, @id), 
+                    convert(binary, @pw), 
                     0, 
                     GETDATE(), 
                     @email, 
@@ -101,8 +101,8 @@ router.post("/login", async (req, res) => {
                     Email, 
                     accounttype
                 FROM RF_User.dbo.tbl_rfaccount 
-                WHERE id = CONVERT(BINARY(13), @user) 
-                  AND password = CONVERT(BINARY(13), @pw)
+                WHERE id = convert(binary, @user) 
+                  AND password = convert(binary, @pw)
             `);
 
         if (result.recordset.length === 0) {

@@ -1,28 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Card, Tag, Collapse, Divider, message, Skeleton } from 'antd';
 import { 
-  Row, 
-  Col, 
-  Card, 
-  Tag, 
-  Collapse, 
-  Divider, 
-  Badge 
-} from 'antd';
-import { 
-  WalletOutlined, 
-  LineChartOutlined, 
-  ClockCircleOutlined, 
-  InfoCircleOutlined, 
-  ThunderboltOutlined,
-  DatabaseOutlined
+  WalletOutlined, LineChartOutlined, ClockCircleOutlined, 
+  InfoCircleOutlined, ThunderboltOutlined, DatabaseOutlined 
 } from '@ant-design/icons';
 
 const { Panel } = Collapse;
 
 export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [activeChar, setActiveChar] = useState(null);
+
+  // States for UI toggles
   const [warVisible, setWarVisible] = useState(true);
   const [ecoVisible, setEcoVisible] = useState(true);
-  const [activeChar, setActiveChar] = useState('BossW');
+
+  useEffect(() => {
+    fetchAccountData();
+  }, []);
+
+  const fetchAccountData = async () => {
+    try {
+      // We get the username from localStorage (set during login)
+      const user = JSON.parse(localStorage.getItem('rf_user'));
+      if (!user) return;
+
+      const response = await fetch(`/api/auth/account-info/${user.username}`);
+      const result = await response.json();
+
+      if (result.status === 200) {
+        setData(result.data);
+        // Set the first character as active by default if they exist
+        if (result.data.characters && result.data.characters.length > 0) {
+          setActiveChar(result.data.characters[0]);
+        }
+      } else {
+        message.error(result.message);
+      }
+    } catch (error) {
+      message.error("Failed to fetch dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div style={{ padding: '50px' }}><Skeleton active /></div>;
+  if (!data) return <div style={{ color: '#fff' }}>No account data found.</div>;
 
   const ToggleBtn = ({ isActive, onClick }) => (
     <Tag 
@@ -46,46 +70,50 @@ export default function Dashboard() {
       </div>
 
       <Row gutter={[20, 20]}>
-        
         {/* LEFT COLUMN */}
-        <Col xs={24} lg={8}>
-          {/* Welcome Card */}
+        <Col xs={24} md={24} lg={24} xl={12} xxl={8}>
+          
+          {/* Welcome Card - Dynamic Data */}
           <Card style={{ background: '#224a70', border: 'none', marginBottom: '20px' }}>
-            <h2 style={{ color: '#fff', margin: 0 }}>Welcome wulf15!</h2>
+            <h2 style={{ color: '#fff', margin: 0 }}>Welcome {data.username}!</h2>
             <div style={{ color: '#bae7ff', fontSize: '12px', marginTop: '10px' }}>
-              <p style={{ margin: '4px 0' }}><ClockCircleOutlined /> Last login: Thu, 10 Jul 2025 04:27 PM</p>
-              <p style={{ margin: '4px 0' }}><InfoCircleOutlined /> IP Address: 172.69.184.135</p>
+              <p style={{ margin: '4px 0' }}>
+                <ClockCircleOutlined /> Last login: {data.last_login ? new Date(data.last_login).toLocaleString() : 'N/A'}
+              </p>
+              <p style={{ margin: '4px 0' }}>
+                <InfoCircleOutlined /> IP Address: {data.ip_address || '0.0.0.0'}
+              </p>
             </div>
           </Card>
 
-          {/* Billing Information Card - SWAPPED TO LEFT */}
+          {/* Billing Card - Dynamic Data */}
           <Card 
              title={<span style={{ color: '#fff' }}><WalletOutlined style={{ marginRight: '8px' }} />Billing Information</span>}
              style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', marginBottom: '20px' }}
              bodyStyle={{ padding: '20px' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{ flexGrow: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                   <span style={{ fontSize: '14px', fontWeight: 'bold' }}>GP</span>
-                  <span style={{ fontSize: '32px', fontWeight: '900', lineHeight: '1' }}>0</span>
+                  <span style={{ fontSize: '32px', fontWeight: '900', lineHeight: '1' }}>{data.game_point}</span>
                 </div>
                 <div style={{ fontSize: '12px', color: '#888', marginLeft: '32px' }}>Game Points</div>
               </div>
 
-              <div>
+              <div style={{ flexGrow: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <DatabaseOutlined style={{ fontSize: '22px' }} />
-                  <span style={{ fontSize: '32px', fontWeight: '900', lineHeight: '1' }}>0</span>
+                  <span style={{ fontSize: '32px', fontWeight: '900', lineHeight: '1' }}>{data.cash_coin}</span>
                 </div>
                 <div style={{ fontSize: '12px', color: '#888', marginLeft: '32px' }}>Cash Coin</div>
               </div>
 
-              <div>
+              <div style={{ flexGrow: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <ClockCircleOutlined style={{ fontSize: '20px' }} />
-                  <Tag color="#d32f2f" style={{ border: 'none', fontWeight: 'bold', padding: '2px 10px', borderRadius: '4px', margin: 0 }}>
-                    Expired
+                  <Tag color={data.status === 'Active' ? "#2ecc71" : "#d32f2f"} style={{ border: 'none', fontWeight: 'bold', padding: '2px 10px', borderRadius: '4px', margin: 0 }}>
+                    {data.status}
                   </Tag>
                 </div>
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '4px', marginLeft: '30px' }}>Premium Service</div>
@@ -93,46 +121,48 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* Character Management Card */}
+          {/* Character Management Card - Mapped from tbl_base */}
           <Card style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }} bodyStyle={{ padding: '0' }}>
-            <div style={{ display: 'flex', background: '#050505' }}>
-              {['BossW', 'MissW', 'MissM'].map(name => (
+            <div style={{ display: 'flex', background: '#050505', overflowX: 'auto' }}>
+              {data.characters.map(char => (
                 <div 
-                  key={name}
-                  onClick={() => setActiveChar(name)}
+                  key={char.Serial}
+                  onClick={() => setActiveChar(char)}
                   style={{ 
-                    flex: 1, padding: '12px', textAlign: 'center', cursor: 'pointer',
-                    background: activeChar === name ? '#1c3d5a' : 'transparent'
+                    flex: 1, minWidth: '100px', padding: '12px', textAlign: 'center', cursor: 'pointer',
+                    background: activeChar?.Serial === char.Serial ? '#1c3d5a' : 'transparent',
+                    borderRight: '1px solid #1a1a1a'
                   }}
                 >
-                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{name}</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{char.Name}</div>
                 </div>
               ))}
             </div>
-            <div style={{ padding: '20px' }}>
-              <Row>
-                <Col span={8}>
-                  <div style={{ fontSize: '12px', color: '#888' }}>Level</div>
-                  <div style={{ fontSize: '32px', fontWeight: 'bold' }}>49</div>
-                </Col>
-                <Col span={16}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>HP <span style={{ color: '#ff4d4f' }}>10612</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>FP <span style={{ color: '#1890ff' }}>444</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>SP <span style={{ color: '#faad14' }}>1654</span></div>
-                </Col>
-              </Row>
-              <Divider style={{ margin: '12px 0', borderColor: '#222' }} />
-              <div style={{ marginTop: '15px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', background: '#050505', padding: '8px' }}>
-                {[...Array(16)].map((_, i) => (<div key={i} style={{ aspectRatio: '1/1', background: '#111', border: '1px solid #222' }}></div>))}
+            
+            {activeChar && (
+              <div style={{ padding: '20px' }}>
+                <Row>
+                  <Col span={8}>
+                    <div style={{ fontSize: '12px', color: '#888' }}>Level</div>
+                    <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{activeChar.Level}</div>
+                  </Col>
+                  <Col span={16}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>Class <span style={{ color: '#2ecc71' }}>{activeChar.Class}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>Serial <span style={{ color: '#888' }}>#{activeChar.Serial}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>Last Play <span style={{ color: '#faad14' }}>{new Date(activeChar.LastConnTime).toLocaleDateString()}</span></div>
+                  </Col>
+                </Row>
+                <Divider style={{ margin: '12px 0', borderColor: '#222' }} />
+                <div style={{ background: '#050505', padding: '10px', borderRadius: '4px' }}>
+                    <small style={{ color: '#555' }}>Character is currently <b>{data.status === 'Active' ? 'Online' : 'Offline'}</b></small>
+                </div>
               </div>
-            </div>
+            )}
           </Card>
         </Col>
 
-        {/* RIGHT COLUMN */}
-        <Col xs={24} lg={16}>
-          
-          {/* War Battle Statistics Card - SWAPPED TO RIGHT */}
+        {/* RIGHT COLUMN - Stats and Charts */}
+        <Col xs={24} md={24} lg={24} xl={12} xxl={16}>
           <Card 
             title={<span style={{ color: '#fff' }}><ThunderboltOutlined style={{ marginRight: '8px' }} />War Battle Statistics</span>}
             extra={<ToggleBtn isActive={warVisible} onClick={() => setWarVisible(!warVisible)} />}
@@ -140,13 +170,12 @@ export default function Dashboard() {
             bodyStyle={{ display: warVisible ? 'block' : 'none', padding: '24px' }}
           >
             <div style={{ height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-               <div style={{ width: '160px', height: '160px', border: '1px dashed #333', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ color: '#444' }}>Radar Chart</span>
-               </div>
+                <div style={{ width: '160px', height: '160px', border: '1px dashed #333', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                   <span style={{ color: '#444' }}>Radar Chart</span>
+                </div>
             </div>
           </Card>
 
-          {/* Economy History Card */}
           <Card 
              title={<span style={{ color: '#fff' }}><LineChartOutlined style={{ marginRight: '8px' }} />Economy History</span>}
              extra={<ToggleBtn isActive={ecoVisible} onClick={() => setEcoVisible(!ecoVisible)} />}
@@ -154,7 +183,7 @@ export default function Dashboard() {
              bodyStyle={{ display: ecoVisible ? 'block' : 'none', padding: '24px' }}
           >
             <div style={{ background: '#141414', padding: '10px', borderRadius: '4px', fontSize: '11px', textAlign: 'center', marginBottom: '15px' }}>
-               GOLD EXCHANGE RATES & TAX RATES
+                GOLD EXCHANGE RATES & TAX RATES
             </div>
             <div style={{ height: '180px', border: '1px dashed #333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                <p style={{ color: '#444' }}>[ Economic Line Chart ]</p>
@@ -162,10 +191,9 @@ export default function Dashboard() {
           </Card>
 
           <Collapse expandIconPosition="right" ghost style={{ background: '#0a0a0a', border: '1px solid #1a1a1a' }}>
-            <Panel header="UPDATE: Return Of The Lord Master 1/22/25" key="1" style={{ borderBottom: '1px solid #1a1a1a' }} />
-            <Panel header="NOTICE [PATCH LOGS] 02/20/2024" key="2" />
+            <Panel header="UPDATE: Return Of The Lord Master" key="1" style={{ borderBottom: '1px solid #1a1a1a' }} />
+            <Panel header="NOTICE [PATCH LOGS] 2026" key="2" />
           </Collapse>
-
         </Col>
       </Row>
     </div>

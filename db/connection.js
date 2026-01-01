@@ -3,7 +3,7 @@ import "dotenv/config";
 
 const dbConfig = {
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    password: "R9#vT!q2Xe",
     server: process.env.DB_SERVER,
     database: "RF_User", // Default starting point
     options: {
