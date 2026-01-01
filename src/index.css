@@ -1,0 +1,53 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  display: flex; /* Centers the card */
+  justify-content: center;
+  align-items: center;
+}
+
+/* Change this part */
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #000; /* Or your preferred background image */
+}
+
+
+
+.login-card {
+  width: 500px; /* Increased from 400px */
+  background-color: #0a0a0a;
+  padding: 35px 45px; /* Added more horizontal padding */
+  border-radius: 8px;
+  border: 1px solid #1a1a1a;
+  box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* Keep the slim input fields we just created */
+.rf-input-wrapper {
+  background-color: #e8f0fe;
+  border-radius: 4px;
+  padding: 4px 12px; 
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+}
+
+.rf-label {
+  display: block;
+  font-size: 10px; 
+  color: #666;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: -2px;
+}
