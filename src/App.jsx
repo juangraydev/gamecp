@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard'; 
 import CharacterSearch from './pages/CharacterSearch'; 
 import CharacterLogs from './pages/CharacterLogs';
+import AccountChangePin from './pages/ChangePin';
+import AccountChangePassword from './pages/ChangePassword';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 
 export default function App() {
@@ -32,6 +34,8 @@ export default function App() {
           <Navigate to="/login" />
         }>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/account/pin" element={<AccountChangePin />} />
+          <Route path="/account/password" element={<AccountChangePassword />} />
           <Route path="/character/search" element={<CharacterSearch />} />
           <Route path="/character/logs" element={<CharacterLogs />} />
         </Route>
