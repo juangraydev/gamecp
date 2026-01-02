@@ -12,7 +12,7 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
 
   // Note: Replace this with your actual auth state or localStorage retrieval
-  const currentUser = localStorage.getItem('username') || ''; 
+  const currentUser = JSON.parse(localStorage.getItem('rf_user')).username || '';
 
   const handleInputChange = (field, value) => {
     const cleanValue = field === 'currentPin' ? value.replace(/\D/g, '') : value;
@@ -40,7 +40,7 @@ export default function ChangePassword() {
 
     try {
       // 2. API Call to the Endpoint created earlier
-      const response = await axios.post('/api/change-password', {
+      const response = await axios.post('/api/auth/change-password', {
         username: currentUser,
         currentPin,
         currentPassword,

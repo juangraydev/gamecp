@@ -12,7 +12,7 @@ export default function ChangePin() {
   const [loading, setLoading] = useState(false);
 
   // Retrieve the logged-in username from localStorage
-  const currentUser = localStorage.getItem('username') || '';
+  const currentUser = JSON.parse(localStorage.getItem('rf_user')).username || '';
 
   const handleInputChange = (field, value) => {
     // Only allow numbers for PIN fields
@@ -41,7 +41,7 @@ export default function ChangePin() {
 
     try {
       // 2. API Call to the Change PIN endpoint
-      const response = await axios.post('/api/change-pin', {
+      const response = await axios.post('/api/auth/change-pin', {
         username: currentUser,
         currentPin,
         currentPassword,

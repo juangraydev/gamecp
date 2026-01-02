@@ -13,47 +13,67 @@ export default function CharacterSearch() {
     setCharacterData(null);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // 1. Call the single modular endpoint
+      const response = await axios.post('/api/character-search', { 
+        characterName: name.trim() 
+      });
 
-      const mockData = {
-        profile: {
-          name: name.trim(),
-          race: 'Cora',
-          level: 65,
-          money: '2,500,000,000',
-          bankMoney: '1,200,500,000',
-          cp: '850,200',
-          baseClass: 'Warrior',
-          job1: 'Champion',
-          job2: 'Black Knight',
-          gold: '150,000',
-          bankGold: '50,000',
-          pvp: '45,000'
-        },
-        equipment: [
-          { label: 'Head', item: 'Pumpkin Mask R', upgrades: '🟣🟣🟣🟣🟣⚪⚪' },
-          { label: 'Upper', item: 'Strength Superior Black Velocity Suit', upgrades: '🟣🟣🟣⚪⚪⚪' },
-          { label: 'Lower', item: 'Sharp Superior Black Velocity Slacks', upgrades: '🟣🟣🟣🟣⚪⚪⚪' },
-          { label: 'Gloves', item: 'Sharp Superior Black Velocity Armlet', upgrades: '🟣🟣⚪⚪' },
-          { label: 'Shoes', item: 'Intense Black Velocity Boots', upgrades: '🟢🟢🟢🟢🟢🟢🟢' },
-          { label: 'Weapon', item: 'wind Intense Hora Bow', upgrades: '🔴🔴🔴⚪' },
-          { label: 'Shield', item: 'No item', upgrades: 'No Upgrades' },
-          { label: 'Cloak', item: 'City Raid Cape Attack [Exclusive]', upgrades: 'No Upgrades' },
-        ],
-        accessories: [
-          { label1: 'Ring', item1: "Infinite Memory's Ring", label2: 'Ring', item2: "Infinite Memory's Ring" },
-          { label1: 'Amulet', item1: 'Elemental Dan EarringH', label2: 'Amulet', item2: 'Elemental Dan EarringH' },
-          { label1: 'Ammo', item1: 'Giga Beam Cell', label2: 'Ammo', item2: 'Mega Mineral Arrow' },
-        ],
-        inventory: [
-          { key: '1', slot: 1, name: 'Azl Raiment Armlet', amount: 1, upgrades: '⚪⚪⚪⚪⚪⚪⚪' },
-        ]
-      };
+      if (response.data.status === 200) {
+        const { info, equipment, inventory, bank } = response.data.data;
 
-      setCharacterData(mockData);
+        // 2. Map API data to your UI structure
+        const mappedData = {
+          profile: {
+            name: info.Name,
+            race: info.Race === 0 ? 'Bellato' : info.Race === 1 ? 'Cora' : 'Accretia',
+            level: info.Level,
+            money: info.Dalant?.toLocaleString(),
+            bankMoney: bank?.Dalant?.toLocaleString() || "0",
+            cp: info.Gold?.toLocaleString(), // Often used for CP in custom servers
+            baseClass: info.BaseClass,
+            job1: info.Job1,
+            job2: info.Job2,
+            gold: info.Gold?.toLocaleString(),
+            bankGold: bank?.Gold?.toLocaleString() || "0",
+            pvp: info.pvp_point?.toLocaleString() || "0"
+          },
+          // Mapping Equipment from the module
+          equipment: [
+            { label: 'Head', item: equipment.Head?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Head?.upgrade) },
+            { label: 'Upper', item: equipment.Upper?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Upper?.upgrade) },
+            { label: 'Lower', item: equipment.Lower?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Lower?.upgrade) },
+            { label: 'Gloves', item: equipment.Gloves?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Gloves?.upgrade) },
+            { label: 'Shoes', item: equipment.Shoes?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Shoes?.upgrade) },
+            { label: 'Weapon', item: equipment.Weapon?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Weapon?.upgrade) },
+            { label: 'Shield', item: equipment.Shield?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Shield?.upgrade) },
+            { label: 'Cloak', item: equipment.Cloak?.item_name || 'No Item', upgrades: formatUpgrades(equipment.Cloak?.upgrade) },
+          ],
+          accessories: [
+            { label1: 'Ring', item1: equipment.Ring1?.item_name || 'No Item', label2: 'Ring', item2: equipment.Ring2?.item_name || 'No Item' },
+            { label1: 'Amulet', item1: equipment.Amulet1?.item_name || 'No Item', label2: 'Amulet', item2: equipment.Amulet2?.item_name || 'No Item' },
+            { label1: 'Ammo', item1: equipment.Ammo1?.item_name || 'No Item', label2: 'Ammo', item2: equipment.Ammo2?.item_name || 'No Item' },
+          ],
+          inventory: inventory.map((item, idx) => ({
+            key: idx,
+            slot: item.slot + 1,
+            name: item.name,
+            amount: item.qty || 1,
+            upgrades: formatUpgrades(item.upgrade)
+          })),
+          bankItems: bank.items ? bank.items.map((item, idx) => ({
+            key: idx,
+            slot: item.slot + 1,
+            name: item.name,
+            amount: item.qty || 1,
+            upgrades: formatUpgrades(item.upgrade)
+          })) : []
+        };
+
+        setCharacterData(mappedData);
+      }
     } catch (error) {
-      message.error("Search failed");
+      const errorMsg = error.response?.data?.message || "Character not found";
+      message.error(errorMsg);
     } finally {
       setLoading(false);
     }
