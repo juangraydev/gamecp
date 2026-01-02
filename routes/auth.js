@@ -139,4 +139,98 @@ router.post("/login", async (req, res) => {
     }
 });
 
+/**
+ * --- CHANGE PIN ENDPOINT ---
+ */
+router.post("/change-pin", async (req, res) => {
+    const { username, currentPin, currentPassword, newPin } = req.body;
+
+    if (!username || !currentPin || !currentPassword || !newPin) {
+        return res.status(400).json({ status: 400, message: "All fields are required" });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        // 1. Verify current PIN and Password first
+        const verify = await pool.request()
+            .input("user", sql.VarChar, username)
+            .input("pin", sql.VarChar, currentPin)
+            .input("pw", sql.VarChar, currentPassword)
+            .query(`
+                SELECT id FROM RF_User.dbo.tbl_rfaccount 
+                WHERE id = convert(binary, @user) 
+                AND pin = @pin 
+                AND password = convert(binary, @pw)
+            `);
+
+        if (verify.recordset.length === 0) {
+            return res.status(401).json({ status: 401, message: "Invalid current PIN or Password" });
+        }
+
+        // 2. Update to new PIN
+        await pool.request()
+            .input("user", sql.VarChar, username)
+            .input("newPin", sql.VarChar, newPin)
+            .query(`
+                UPDATE RF_User.dbo.tbl_rfaccount 
+                SET pin = @newPin 
+                WHERE id = convert(binary, @user)
+            `);
+
+        return res.status(200).json({ status: 200, message: "PIN changed successfully" });
+
+    } catch (err) {
+        console.error("Change PIN Error:", err);
+        return res.status(500).json({ status: 500, message: "Internal Server Error" });
+    }
+});
+
+/**
+ * --- CHANGE PASSWORD ENDPOINT ---
+ */
+router.post("/change-password", async (req, res) => {
+    const { username, currentPin, currentPassword, newPassword } = req.body;
+
+    if (!username || !currentPin || !currentPassword || !newPassword) {
+        return res.status(400).json({ status: 400, message: "All fields are required" });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        // 1. Verify credentials (PIN + Old PW)
+        const verify = await pool.request()
+            .input("user", sql.VarChar, username)
+            .input("pin", sql.VarChar, currentPin)
+            .input("pw", sql.VarChar, currentPassword)
+            .query(`
+                SELECT id FROM RF_User.dbo.tbl_rfaccount 
+                WHERE id = convert(binary, @user) 
+                AND pin = @pin 
+                AND password = convert(binary, @pw)
+            `);
+
+        if (verify.recordset.length === 0) {
+            return res.status(401).json({ status: 401, message: "Identity verification failed" });
+        }
+
+        // 2. Update to new Password
+        await pool.request()
+            .input("user", sql.VarChar, username)
+            .input("newPw", sql.VarChar, newPassword)
+            .query(`
+                UPDATE RF_User.dbo.tbl_rfaccount 
+                SET password = convert(binary, @newPw) 
+                WHERE id = convert(binary, @user)
+            `);
+
+        return res.status(200).json({ status: 200, message: "Password updated successfully" });
+
+    } catch (err) {
+        console.error("Change Password Error:", err);
+        return res.status(500).json({ status: 500, message: "Internal Server Error" });
+    }
+});
+
 export default router;

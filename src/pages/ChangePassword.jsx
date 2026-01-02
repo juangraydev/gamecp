@@ -1,41 +1,66 @@
 import React, { useState } from 'react';
 import { Input, Button, message } from 'antd';
+import axios from 'axios';
 
-export default function ChangePin() {
+export default function ChangePassword() {
   const [formData, setFormData] = useState({
     currentPin: '',
     currentPassword: '',
-    newPin: '',
-    confirmPin: ''
+    newPassword: '',
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
 
+  // Note: Replace this with your actual auth state or localStorage retrieval
+  const currentUser = localStorage.getItem('username') || ''; 
+
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const cleanValue = field === 'currentPin' ? value.replace(/\D/g, '') : value;
+    setFormData(prev => ({ ...prev, [field]: cleanValue }));
   };
 
   const handleSubmit = async () => {
-    const { currentPin, currentPassword, newPin, confirmPin } = formData;
-
-    // Basic Validation
-    if (!currentPin || !currentPassword || !newPin || !confirmPin) {
+    const { currentPin, currentPassword, newPassword, confirmPassword } = formData;
+    
+    // 1. Frontend Validation
+    if (!currentPin || !currentPassword || !newPassword || !confirmPassword) {
       return message.error("Please fill in all fields");
     }
-    if (newPin !== confirmPin) {
-      return message.error("New PIN and Confirmation PIN do not match");
+    if (currentPin.length !== 6) {
+      return message.error("Current PIN must be 6 digits");
     }
-    if (newPin.length !== 6 || isNaN(newPin)) {
-      return message.error("New PIN must be exactly 6 numbers");
+    if (newPassword !== confirmPassword) {
+      return message.error("New passwords do not match");
+    }
+    if (!currentUser) {
+      return message.error("User session not found. Please re-login.");
     }
 
     setLoading(true);
+
     try {
-      // Replace with your actual API call
-      // await axios.post('/api/account/change-pin', formData);
-      message.success("PIN changed successfully!");
-      setFormData({ currentPin: '', currentPassword: '', newPin: '', confirmPin: '' });
+      // 2. API Call to the Endpoint created earlier
+      const response = await axios.post('/api/change-password', {
+        username: currentUser,
+        currentPin,
+        currentPassword,
+        newPassword
+      });
+
+      if (response.data.status === 200) {
+        message.success(response.data.message);
+        // Clear form on success
+        setFormData({
+          currentPin: '',
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      }
     } catch (error) {
-      message.error("Failed to change PIN. Please check your credentials.");
+      // Handle API errors (401 Unauthorized, 400 Bad Request, etc.)
+      const errorMsg = error.response?.data?.message || "Internal Server Error";
+      message.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -44,122 +69,109 @@ export default function ChangePin() {
   return (
     <div style={{ padding: '20px 20px', background: '#000', minHeight: '100vh' }}>
       <style>{`
-        .form-container { border: 1px solid #333; background: #0a0a0a; width: 100%; margin-bottom: 20px; }
-        .form-row { display: flex; border-bottom: 1px solid #1a1a1a; min-height: 60px; }
+        .form-container { border: 1px solid #333; background: #0a0a0a; width: 100%; }
+        .form-row { display: flex; border-bottom: 1px solid #1a1a1a; min-height: 70px; }
         .form-label-cell { 
             width: 550px; 
-            padding: 12px 15px; 
+            padding: 15px 20px; 
             border-right: 1px solid #333; 
             display: flex; 
             flex-direction: column; 
             justify-content: center;
         }
-        .form-input-cell { flex-grow: 1; padding: 12px 15px; display: flex; align-items: center; background: #0a0a0a; }
-        
-        .label-text { color: #fff; font-weight: bold; font-size: 14px; display: block; }
-        .sub-label-text { color: #888; font-size: 11px; margin-top: 4px; }
-        
-        .custom-input { 
-            border-radius: 4px; 
+        .form-input-cell { flex-grow: 1; padding: 15px 20px; display: flex; align-items: center; background: #0a0a0a; }
+        .label-text { color: #fff; font-weight: bold; font-size: 14px; }
+        .sub-label-text { color: #888; font-size: 11px; margin-top: 2px; }
+        .custom-input-password { 
             background: #eef3f8 !important; 
-            color: #000 !important; 
-            border: 1px solid #d9d9d9; 
-            height: 35px; 
-            width: 100%; 
-            font-weight: 500;
+            border-radius: 2px;
+            border: 1px solid #d9d9d9;
+            height: 38px;
+            width: 100%;
+            display: flex;
+            align-items: center;
         }
-        
-        .spacer-row { height: 20px; background: #000; border-left: 1px solid #333; border-right: 1px solid #333; }
-        .footer-action { background: #1a1a1a; padding: 15px; text-align: center; border-top: 1px solid #333; }
+        .custom-input-password .ant-input-password-icon { color: #000 !important; font-size: 18px; }
+        .custom-input-password input { background: #eef3f8 !important; color: #000 !important; font-weight: bold; }
+        .spacer-row { height: 30px; background: #000; border-left: 1px solid #333; border-right: 1px solid #333; }
+        .footer-action { background: #0a0a0a; padding: 20px; border: 1px solid #333; border-top: none; }
       `}</style>
 
-      {/* Title */}
       <div style={{ textAlign: 'center', marginBottom: '25px' }}>
         <h1 style={{ color: '#fff', fontSize: '24px', textTransform: 'uppercase', borderBottom: '2px solid #ff4d4f', display: 'inline-block', padding: '0 10px 5px' }}>
-          Change Account PIN
+          Change Account Password
         </h1>
       </div>
 
       <div className="form-container">
-        {/* Current PIN */}
         <div className="form-row">
           <div className="form-label-cell">
             <span className="label-text">Current PIN:</span>
-            <span className="sub-label-text">Enter your current PIN</span>
+            <span className="sub-label-text">Enter your 6-digit security PIN to authorize change</span>
           </div>
           <div className="form-input-cell">
             <Input.Password 
+              maxLength={6}
               value={formData.currentPin}
               onChange={(e) => handleInputChange('currentPin', e.target.value)}
-              placeholder="Current PIN"
-              className="custom-input" 
+              className="custom-input-password"
             />
           </div>
         </div>
 
-        {/* Current Password */}
         <div className="form-row">
           <div className="form-label-cell">
-            <span className="label-text">Current password:</span>
-            <span className="sub-label-text">Please re-type your current password</span>
+            <span className="label-text">Current Password:</span>
+            <span className="sub-label-text">Enter your existing account password</span>
           </div>
           <div className="form-input-cell">
             <Input.Password 
               value={formData.currentPassword}
               onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-              placeholder="Current Password"
-              className="custom-input" 
+              className="custom-input-password"
             />
           </div>
         </div>
 
-        {/* Visual Spacer (Black gap in image) */}
         <div className="spacer-row" />
 
-        {/* New PIN */}
         <div className="form-row">
           <div className="form-label-cell">
-            <span className="label-text">New PIN:</span>
-            <span className="sub-label-text">Enter a new valid PIN. Must be 6 numbers in lengths</span>
+            <span className="label-text">New Password:</span>
+            <span className="sub-label-text">Enter your new desired password</span>
           </div>
           <div className="form-input-cell">
-            <Input 
-              maxLength={6}
-              value={formData.newPin}
-              onChange={(e) => handleInputChange('newPin', e.target.value)}
-              placeholder="New PIN"
-              className="custom-input" 
+            <Input.Password 
+              value={formData.newPassword}
+              onChange={(e) => handleInputChange('newPassword', e.target.value)}
+              className="custom-input-password"
             />
           </div>
         </div>
 
-        {/* Confirm PIN */}
         <div className="form-row" style={{ borderBottom: 'none' }}>
           <div className="form-label-cell">
-            <span className="label-text">Confirm PIN:</span>
-            <span className="sub-label-text">Please re-type your new PIN</span>
+            <span className="label-text">Confirm New Password:</span>
+            <span className="sub-label-text">Please re-type your new password to verify</span>
           </div>
           <div className="form-input-cell">
-            <Input 
-              maxLength={6}
-              value={formData.confirmPin}
-              onChange={(e) => handleInputChange('confirmPin', e.target.value)}
-              placeholder="Confirm New PIN"
-              className="custom-input" 
+            <Input.Password 
+              value={formData.confirmPassword}
+              onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+              className="custom-input-password"
             />
           </div>
         </div>
+      </div>
 
-        {/* Action Button */}
-        <div className="footer-action">
-          <Button 
-            onClick={handleSubmit}
-            loading={loading}
-            style={{ background: '#2c3e50', color: '#fff', borderColor: '#34495e', borderRadius: '3px', fontWeight: 'bold', padding: '0 20px' }}
-          >
-            Change PIN
-          </Button>
-        </div>
+      <div className="footer-action">
+        <Button 
+          onClick={handleSubmit}
+          loading={loading}
+          style={{ background: '#34526f', color: '#fff', borderColor: '#4a6b8a', borderRadius: '3px', fontWeight: 'bold' }}
+        >
+          Update Password
+        </Button>
       </div>
     </div>
   );
