@@ -36,8 +36,8 @@ export default function AuthenticatedLayout({ onLogout }) {
     {
       key: 'sub2', icon: <TeamOutlined />, label: 'Characters',
       children: [
-        { key: '/characters/search', icon: <SearchOutlined />, label: 'Search' },
-        { key: '/characters/logs', icon: <HistoryOutlined />, label: 'Logs' },
+        { key: '/character/search', icon: <SearchOutlined />, label: 'Search' },
+        { key: '/character/logs', icon: <HistoryOutlined />, label: 'History Logs' },
       ],
     },
     {

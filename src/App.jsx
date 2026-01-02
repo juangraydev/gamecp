@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard'; // This will be our "Overview" content
+import Dashboard from './pages/Dashboard'; 
+import CharacterSearch from './pages/CharacterSearch'; 
+import CharacterLogs from './pages/CharacterLogs';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 
 export default function App() {
@@ -30,6 +32,8 @@ export default function App() {
           <Navigate to="/login" />
         }>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/character/search" element={<CharacterSearch />} />
+          <Route path="/character/logs" element={<CharacterLogs />} />
         </Route>
 
         {/* Default Redirect */}

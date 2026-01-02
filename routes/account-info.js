@@ -16,10 +16,9 @@ router.get("/:username", async (req, res) => {
             .query(`
                 SELECT 
                     Serial,
-                    CAST(id AS VARCHAR) as username, 
-                    Email, 
+                    RTRIM(CAST(id AS VARCHAR(13))) as username,
                     lastlogintime, 
-                    lastloginip 
+                    lastconnectip 
                 FROM RF_User.dbo.tbl_UserAccount 
                 WHERE id = CONVERT(BINARY(13), @user)
             `);
@@ -52,13 +51,7 @@ router.get("/:username", async (req, res) => {
             .input("serial", sql.Int, accountSerial)
             .query(`
                 SELECT 
-                    Serial, 
-                    Name, 
-                    Level, 
-                    [Class], 
-                    Race, 
-                    MapCode,
-                    LastConnTime
+                    *
                 FROM RF_World.dbo.tbl_base 
                 WHERE DCK = 0 AND AccountSerial = @serial
                 ORDER BY LastConnTime DESC
@@ -69,7 +62,7 @@ router.get("/:username", async (req, res) => {
             username: accountBase.username,
             account_serial: accountSerial,
             last_login: accountBase.lastlogintime,
-            ip_address: accountBase.lastloginip,
+            ip_address: accountBase.lastconnectip,
             game_point: 0, 
             cash_coin: billingData ? billingData.Cash : 0,
             DTEndPrem: billingData ? billingData.DTEndPrem : new Date(),

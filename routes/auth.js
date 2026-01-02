@@ -10,6 +10,7 @@ const router = express.Router();
  */
 router.post("/register", async (req, res) => {
     const { username, password, email, pin } = req.body;
+    const userIP = req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'; // Capture IP
 
     if (!username || !password || !pin) {
         return res.status(400).json({
@@ -22,7 +23,7 @@ router.post("/register", async (req, res) => {
     try {
         const pool = await poolPromise;
         
-        // Check if Account already exists (Security: Parameterized)
+        // 1. Check if Account already exists
         const check = await pool.request()
             .input("username", sql.VarChar, username)
             .query(`
@@ -38,29 +39,38 @@ router.post("/register", async (req, res) => {
             });
         }
 
-        // Insert into RF_User (Security: Parameterized + Binary Conversion)
+        // 2. Insert into RF_User (Account Table)
         await pool.request()
             .input("id", sql.VarChar, username)
             .input("pw", sql.VarChar, password)
             .input("email", sql.VarChar, email || "")
             .input("pin", sql.VarChar, pin)
             .query(`
-                INSERT INTO RF_User.dbo.tbl_rfaccount (
-                    [id], [password], [accounttype], [birthdate], [Email], [pin]
-                ) 
-                VALUES (
-                    convert(binary, @id), 
-                    convert(binary, @pw), 
-                    0, 
-                    GETDATE(), 
-                    @email, 
-                    @pin
-                )
+                INSERT INTO RF_User.dbo.tbl_rfaccount ([id], [password], [accounttype], [birthdate], [Email], [pin]) 
+                VALUES (convert(binary, @id), convert(binary, @pw), 0, GETDATE(), @email, @pin)
+            `);
+
+        // 3. Insert into tbl_UserAccount (Audit/Log Table)
+        await pool.request()
+            .input("username", sql.VarChar, username)
+            .input("ip", sql.VarChar, userIP)
+            .query(`
+                INSERT INTO RF_User.dbo.tbl_UserAccount (id, createtime, createip)
+                VALUES (CONVERT(binary, @username), GETDATE(), @ip)
+            `);
+
+        // 4. Insert into Billing (Premium/Cash Table)
+        // Note: Adding 3 days to GETDATE() for Premium end
+        await pool.request()
+            .input("username", sql.VarChar, username)
+            .query(`
+                INSERT INTO BILLING.dbo.tbl_UserStatus (Id, Status, DTStartPrem, DTEndPrem, Cash)
+                VALUES (CONVERT(binary, @username), '2', GETDATE(), DATEADD(day, 3, GETDATE()), 0)
             `);
 
         return res.status(200).json({
             status: 200,
-            message: "Account registered successfully",
+            message: "Account registered successfully and billing initialized",
             data: { username }
         });
 
